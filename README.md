@@ -16,9 +16,15 @@ Besides, there's another python file [image.py][4]. It contains the photos' data
 
 The GUI still needs to be improved. Wanted someone good at game UI design to help me.
 
-There're still some functions need adding, like the rank.
+There're still some functions need adding, such as the rank and so on.
+
+If you are interested, just join me.
+
+The Photos used are in the directory, too. If you are the author of some photo, you can email me to ask for the pay.
 
 [1]:./BasicRule.py
 [2]:./window.py
 [3]:./扫雷.py
 [4]:./images.py
+
+email: 714223317@qq.com

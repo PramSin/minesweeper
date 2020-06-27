@@ -4,8 +4,6 @@ import sys
 
 
 def main():
-    # m = MineSweeper(length, width, number)
-    # m.play()
     app = QApplication(sys.argv)
     ex = Start()
     sys.exit(app.exec_())
