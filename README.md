@@ -1,4 +1,4 @@
-# MineSweeper
+# MineSweeper v1.0
 
 This project is a mimic game of the original WindowsXP game minesweeper.
 
@@ -10,7 +10,7 @@ The [BasicRule.py][1] uses basic Python Object Oriented to establish the rules a
 
 The [window.py][2] uses the module PyQt5 to create the GUI for the players.
 
-The [扫雷.py][3] is a start program of the game.
+The [main.py][3] is a start program of the game.
 
 Besides, there's another python file [image.py][4]. It contains the photos' data used in the file [window.py][2].
 
@@ -24,7 +24,7 @@ The Photos used are in the directory, too. If you are the author of some photo, 
 
 [1]:./BasicRule.py
 [2]:./window.py
-[3]:./扫雷.py
+[3]:./main.py
 [4]:./images.py
 
 email: 714223317@qq.com
