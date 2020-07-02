@@ -1,6 +1,6 @@
-from PyQt5.QtCore import Qt, QBasicTimer, QSize, QRect
-from PyQt5.QtGui import QPainter, QPen, QColor, QFont, QPixmap, QIcon
-from PyQt5.QtWidgets import QMainWindow, QFormLayout, QActionGroup, \
+from PySide2.QtCore import Qt, QBasicTimer, QSize, QRect
+from PySide2.QtGui import QPainter, QPen, QColor, QFont, QPixmap, QIcon
+from PySide2.QtWidgets import QMainWindow, QFormLayout, QActionGroup, \
     QPushButton, QDialog, QWidget, QInputDialog, QAction, QLCDNumber
 from BasicRule import MineSweeper, EasyMode, MediumMode, HardMode
 
@@ -108,17 +108,17 @@ class SetFree(QWidget):
         self.setFixedSize(300, 200)
 
     def set_len(self):
-        length, ok = QInputDialog.getInt(self, '长', '输入长：')
+        length, ok = QInputDialog.getInt(self, '长', '输入长：', 9)
         if ok:
             self.len = length
 
     def set_wid(self):
-        width, ok = QInputDialog.getInt(self, '高', '输入高：')
+        width, ok = QInputDialog.getInt(self, '高', '输入高：', 9)
         if ok:
             self.wid = width
 
     def set_boom(self):
-        boom, ok = QInputDialog.getInt(self, '炸弹数量', '输入炸弹数量：')
+        boom, ok = QInputDialog.getInt(self, '炸弹数量', '输入炸弹数量：', 10)
         if ok:
             self.boom = boom
 
@@ -260,7 +260,7 @@ class MineSweeperWindow(QMainWindow):
             return
         if self.ms.step == 0:
             self.timer.start(1000, self)
-        if e.button() == Qt.LeftButton:
+        if e.button() in (Qt.LeftButton, Qt.RightButton):
             mouse_x = e.windowPos().x()
             mouse_y = e.windowPos().y()
             if 50 <= mouse_x <= 50 * self.ms.length + 50 and 130 <= mouse_y <= 50 * self.ms.width + 130:
@@ -268,16 +268,10 @@ class MineSweeperWindow(QMainWindow):
                 game_y = int((mouse_y - 80) // 50) - 1
             else:
                 return
-            self.ms.click(game_x, game_y)
-        if e.button() == Qt.RightButton:
-            mouse_x = e.windowPos().x()
-            mouse_y = e.windowPos().y()
-            if 50 <= mouse_x <= 50 * self.ms.length + 50 and 130 <= mouse_y <= 50 * self.ms.width + 130:
-                game_x = int(mouse_x // 50) - 1
-                game_y = int((mouse_y - 80) // 50) - 1
+            if e.button() == Qt.LeftButton:
+                self.ms.click(game_x, game_y)
             else:
-                return
-            self.ms.mark_mine(game_x, game_y)
+                self.ms.mark_mine(game_x, game_y)
         if self.ms.boom:
             self.repaint(0, 0, 50 * self.ms.length + 100, 50 * self.ms.width + 180)
             self.game_result()
