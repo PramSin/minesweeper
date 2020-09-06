@@ -238,7 +238,7 @@ class MineSweeperWindow(QMainWindow):
                             qp.drawPixmap(QRect(50 * (x + 1), 50 * (y + 1) + 80, 50, 50), flag)
                             # qp.drawText(50 * (x + 1) + 18, 50 * (y + 1) + 115, '$')
                             continue
-                        qp.setPen(QPen(QColor(111, 108, 108), 1, Qt.SolidLine))
+                        qp.setPen(QPen(QColor('black'), 1, Qt.SolidLine))
                         qp.setFont(QFont('Kai', 15))
                         qp.drawRect(50 * (x + 1), 50 * (y + 1) + 80, 50, 50)
                         if self.ms.g_map[y][x] == '0':
@@ -268,7 +268,9 @@ class MineSweeperWindow(QMainWindow):
                 game_y = int((mouse_y - 80) // 50) - 1
             else:
                 return
-            if e.button() == Qt.LeftButton:
+            if e.buttons() == Qt.LeftButton | Qt.RightButton:
+                self.ms.click_around(game_x, game_y)
+            elif e.buttons() == Qt.LeftButton:
                 self.ms.click(game_x, game_y)
             else:
                 self.ms.mark_mine(game_x, game_y)

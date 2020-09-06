@@ -31,70 +31,27 @@ class MineSweeper:
     def click(self, pos_x=None, pos_y=None):
         """玩家点击"""
 
-        def count_mines_around(x, y):
+        def count_around(x, y):
             num_of_mines = 0
-            if x + 1 < self.length and (self.g_map[y][x + 1] == 1 or self.g_map[y][x + 1] == '1$'):
-                num_of_mines += 1
-            if x - 1 >= 0 and (self.g_map[y][x - 1] == 1 or self.g_map[y][x - 1] == '1$'):
-                num_of_mines += 1
-            if y + 1 < self.width:
-                if x - 1 >= 0 and (self.g_map[y + 1][x - 1] == 1 or self.g_map[y + 1][x - 1] == '1$'):
-                    num_of_mines += 1
-                if x + 1 < self.length and (self.g_map[y + 1][x + 1] == 1 or self.g_map[y + 1][x + 1] == '1$'):
-                    num_of_mines += 1
-                if self.g_map[y + 1][x] == 1 or self.g_map[y + 1][x] == '1$':
-                    num_of_mines += 1
-            if y - 1 >= 0:
-                if x - 1 >= 0 and (self.g_map[y - 1][x - 1] == 1 or self.g_map[y - 1][x - 1] == '1$'):
-                    num_of_mines += 1
-                if x + 1 < self.length and (self.g_map[y - 1][x + 1] == 1 or self.g_map[y - 1][x + 1] == '1$'):
-                    num_of_mines += 1
-                if self.g_map[y - 1][x] == 1 or self.g_map[y - 1][x] == '1$':
-                    num_of_mines += 1
+            for i, j in zip([-1, 0, 1, -1, 1, -1, 0, 1], [1, 1, 1, 0, 0, -1, -1, -1]):
+                if 0 <= x + i < self.length and 0 <= y + j < self.width:
+                    if self.g_map[y + j][x + i] == 1 or self.g_map[y + j][x + i] == '1$':
+                        num_of_mines += 1
             return num_of_mines
 
         def chain_blank(x, y):
-            if x + 1 < self.length and isinstance(self.g_map[y][x + 1], int):
-                self.g_map[y][x + 1] = str(count_mines_around(x + 1, y))
-                if not count_mines_around(x + 1, y):
-                    chain_blank(x + 1, y)
-            if x - 1 >= 0 and isinstance(self.g_map[y][x - 1], int):
-                self.g_map[y][x - 1] = str(count_mines_around(x - 1, y))
-                if not count_mines_around(x - 1, y):
-                    chain_blank(x - 1, y)
-            if y + 1 < self.width:
-                if x - 1 >= 0 and isinstance(self.g_map[y + 1][x - 1], int):
-                    self.g_map[y + 1][x - 1] = str(count_mines_around(x - 1, y + 1))
-                    if not count_mines_around(x - 1, y + 1):
-                        chain_blank(x - 1, y + 1)
-                if x + 1 < self.length and isinstance(self.g_map[y + 1][x + 1], int):
-                    self.g_map[y + 1][x + 1] = str(count_mines_around(x + 1, y + 1))
-                    if not count_mines_around(x + 1, y + 1):
-                        chain_blank(x + 1, y + 1)
-                if isinstance(self.g_map[y + 1][x], int):
-                    self.g_map[y + 1][x] = str(count_mines_around(x, y + 1))
-                    if not count_mines_around(x, y + 1):
-                        chain_blank(x, y + 1)
-            if y - 1 >= 0:
-                if x - 1 >= 0 and isinstance(self.g_map[y - 1][x - 1], int):
-                    self.g_map[y - 1][x - 1] = str(count_mines_around(x - 1, y - 1))
-                    if not count_mines_around(x - 1, y - 1):
-                        chain_blank(x - 1, y - 1)
-                if x + 1 < self.length and isinstance(self.g_map[y - 1][x + 1], int):
-                    self.g_map[y - 1][x + 1] = str(count_mines_around(x + 1, y - 1))
-                    if not count_mines_around(x + 1, y - 1):
-                        chain_blank(x + 1, y - 1)
-                if isinstance(self.g_map[y - 1][x], int):
-                    self.g_map[y - 1][x] = str(count_mines_around(x, y - 1))
-                    if not count_mines_around(x, y - 1):
-                        chain_blank(x, y - 1)
+            for i, j in zip([-1, 0, 1, -1, 1, -1, 0, 1], [1, 1, 1, 0, 0, -1, -1, -1]):
+                if 0 <= x + i < self.length and 0 <= y + j < self.width and isinstance(self.g_map[y + j][x + i], int):
+                    self.g_map[y + j][x + i] = str(count_around(x + i, y + j))
+                    if not count_around(x + i, y + j):
+                        chain_blank(x + i, y + j)
 
         while True:
             try:
                 if 0 <= pos_x < self.length and 0 <= pos_y < self.width:
                     if self.g_map[pos_y][pos_x] == 0:
-                        self.g_map[pos_y][pos_x] = str(count_mines_around(pos_x, pos_y))
-                        if not count_mines_around(pos_x, pos_y):
+                        self.g_map[pos_y][pos_x] = str(count_around(pos_x, pos_y))
+                        if not count_around(pos_x, pos_y):
                             chain_blank(pos_x, pos_y)
                         self.step += 1
                         return
@@ -109,8 +66,8 @@ class MineSweeper:
                             self.g_map[new_mine[1]][new_mine[0]] = 1
                             self.mines.remove((pos_x, pos_y))
                             self.mines.append(new_mine)
-                            self.g_map[pos_y][pos_x] = str(count_mines_around(pos_x, pos_y))
-                            if not count_mines_around(pos_x, pos_y):
+                            self.g_map[pos_y][pos_x] = str(count_around(pos_x, pos_y))
+                            if not count_around(pos_x, pos_y):
                                 chain_blank(pos_x, pos_y)
                             self.step += 1
                             return
@@ -123,6 +80,22 @@ class MineSweeper:
                         return
             except ValueError:
                 continue
+
+    def click_around(self, pos_x=None, pos_y=None):
+        def count_around(p_x, p_y):
+            num_of_flags = 0
+            for i, j in zip([-1, 0, 1, -1, 1, -1, 0, 1], [1, 1, 1, 0, 0, -1, -1, -1]):
+                if 0 <= p_x + i < self.length and 0 <= p_y + j < self.width:
+                    if self.g_map[p_y + j][p_x + i] in ('0$', '1$'):
+                        num_of_flags += 1
+            return str(num_of_flags)
+
+        if self.g_map[pos_y][pos_x] == count_around(pos_x, pos_y) \
+                and not self.g_map[pos_y][pos_x] in ('0$', '1$'):
+            for x, y in zip([-1, 0, 1, -1, 1, -1, 0, 1], [1, 1, 1, 0, 0, -1, -1, -1]):
+                if (0 <= pos_x + x < self.length and 0 <= pos_y + y < self.width
+                        and not self.g_map[pos_y + y][pos_x + x] in ('0$', '1$')):
+                    self.click(pos_x + x, pos_y + y)
 
     def mark_mine(self, flag_x=None, flag_y=None):
         while True:
