@@ -8,8 +8,7 @@ class MineSweeper:
         self.width = width
         self.number = number
         self.boom = 0
-        # noinspection PyUnusedLocal
-        self.g_map = [[0 for i in range(length)] for j in range(width)]  # 纯方格：0
+        self.g_map = [[0 for _i in range(length)] for _j in range(width)]  # 纯方格：0
         self.step = 0
         self.b_num = number
         self.places = [(x, y) for x in range(length) for y in range(width)]
@@ -20,8 +19,7 @@ class MineSweeper:
     def refresh(self):
         self.boom = 0
         self.b_num = self.number
-        # noinspection PyUnusedLocal
-        self.g_map = [[0 for i in range(self.length)] for j in range(self.width)]
+        self.g_map = [[0 for _i in range(self.length)] for _j in range(self.width)]
         self.step = 0
         self.places = [(x, y) for x in range(self.length) for y in range(self.width)]
         self.mines = sample(self.places, self.number)
@@ -41,7 +39,10 @@ class MineSweeper:
 
         def chain_blank(x, y):
             for i, j in zip([-1, 0, 1, -1, 1, -1, 0, 1], [1, 1, 1, 0, 0, -1, -1, -1]):
-                if 0 <= x + i < self.length and 0 <= y + j < self.width and isinstance(self.g_map[y + j][x + i], int):
+                if 0 <= x + i < self.length and 0 <= y + j < self.width and \
+                        (isinstance(self.g_map[y + j][x + i], int) or self.g_map[y + j][x + i] == '0$'):
+                    if self.g_map[y + j][x + i] == '0$':
+                        self.b_num += 1
                     self.g_map[y + j][x + i] = str(count_around(x + i, y + j))
                     if not count_around(x + i, y + j):
                         chain_blank(x + i, y + j)

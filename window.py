@@ -1,7 +1,8 @@
 from PySide2.QtCore import Qt, QBasicTimer, QSize, QRect
 from PySide2.QtGui import QPainter, QPen, QColor, QFont, QPixmap, QIcon
+from PySide2.QtSql import QSqlDatabase
 from PySide2.QtWidgets import QMainWindow, QFormLayout, QActionGroup, \
-    QPushButton, QDialog, QWidget, QInputDialog, QAction, QLCDNumber
+    QPushButton, QDialog, QWidget, QInputDialog, QAction, QLCDNumber, QTableWidget
 from BasicRule import MineSweeper, EasyMode, MediumMode, HardMode
 
 # noinspection PyUnresolvedReferences
@@ -30,6 +31,7 @@ class Start(QWidget):
 
     def show_mode(self):
         self.choose = QDialog()
+        self.choose.setWindowIcon(QIcon(':/minesweeper.ico'))
         self.choose.setFixedSize(300, 300)
         self.close()
         btn1 = QPushButton('简单', self.choose)
@@ -105,6 +107,7 @@ class SetFree(QWidget):
         layout.addRow(self.close_btn)
         self.setLayout(layout)
         self.setWindowTitle('自定义设置')
+        self.setWindowIcon(QIcon(':/minesweeper.ico'))
         self.setFixedSize(300, 200)
 
     def set_len(self):
@@ -126,6 +129,27 @@ class SetFree(QWidget):
         self.close()
         self.msw = MineSweeperWindow(MineSweeper(self.len, self.wid, self.boom))
         self.msw.show()
+
+
+class ShowRank(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('排行榜')
+        self.setWindowIcon(QIcon(':/minesweeper.ico'))
+        self.setFixedSize(800, 600)
+        rank_table = QTableWidget()
+        print('准备连接')
+        self.db = QSqlDatabase.addDatabase('QMYSQL')
+        self.db.setHostName('localhost')
+        self.db.setPort(3306)
+        self.db.setDatabaseName('mydb')
+        self.db.setUserName('Pram')
+        self.db.setPassword('123456')
+        print('连接开始')
+        if self.db.open():
+            print('成功连接')
+        else:
+            print('连接失败')
 
 
 # noinspection PyAttributeOutsideInit
@@ -169,6 +193,8 @@ class MineSweeperWindow(QMainWindow):
     def set_menu(self):
         bar = self.menuBar()
         game = bar.addMenu('游戏(&G)')
+        more_info = bar.addMenu('更多(&M)')
+
         new_game = QAction('新游戏(&N)', self)
         new_game.setShortcut('Ctrl+N')
         new_game.triggered.connect(self.start)
@@ -188,13 +214,17 @@ class MineSweeperWindow(QMainWindow):
         self.hard = QAction('困难(H)', self)
         self.hard.setCheckable(True)
         game.addAction(self.modes.addAction(self.hard))
-        self.modes.triggered[QAction].connect(self.set_mode)
+        self.modes.triggered.connect(lambda: self.set_mode(self.modes.checkedAction()))
         if isinstance(self.ms, EasyMode):
             self.easy.setChecked(True)
         elif isinstance(self.ms, MediumMode):
             self.medium.setChecked(True)
         elif isinstance(self.ms, HardMode):
             self.hard.setChecked(True)
+
+        rank = QAction('排行耪(&R)', self)
+        rank.triggered.connect(self.show_rank)
+        more_info.addAction(rank)
 
     def paintEvent(self, e):
         """绘制游戏内容"""
@@ -249,6 +279,7 @@ class MineSweeperWindow(QMainWindow):
                             continue
                         qp.setPen(QPen(QColor('black'), 5, Qt.SolidLine))
                         qp.drawText(50 * (x + 1) + 18, 50 * (y + 1) + 115, '{}'.format(self.ms.g_map[y][x]))
+
         qp.begin(self)
         draw_map()
         draw_blanks()
@@ -312,6 +343,10 @@ class MineSweeperWindow(QMainWindow):
             self.close()
             self.msw = MineSweeperWindow(HardMode())
             self.msw.show()
+
+    def show_rank(self):
+        self.sk = ShowRank()
+        self.sk.show()
 
     def start(self):
         self.close()
