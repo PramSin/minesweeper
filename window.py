@@ -1,12 +1,16 @@
+import re
+import sqlite3
+import subprocess
+from time import time_ns
+
 from PySide2.QtCore import Qt, QBasicTimer, QSize, QRect
 from PySide2.QtGui import QPainter, QPen, QColor, QFont, QPixmap, QIcon
-from PySide2.QtSql import QSqlDatabase
-from PySide2.QtWidgets import QMainWindow, QFormLayout, QActionGroup, \
-    QPushButton, QDialog, QWidget, QInputDialog, QAction, QLCDNumber, QTableWidget
-from BasicRule import MineSweeper, EasyMode, MediumMode, HardMode
+from PySide2.QtWidgets import QMainWindow, QFormLayout, QActionGroup, QPushButton, QDialog, QWidget, QInputDialog, \
+    QAction, QLCDNumber, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QTabWidget, QLineEdit
 
 # noinspection PyUnresolvedReferences
 import images
+from BasicRule import MineSweeper, EasyMode, MediumMode, HardMode
 
 
 # noinspection PyAttributeOutsideInit
@@ -131,25 +135,58 @@ class SetFree(QWidget):
         self.msw.show()
 
 
-class ShowRank(QWidget):
+class ShowRank(QTabWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('排行榜')
         self.setWindowIcon(QIcon(':/minesweeper.ico'))
-        self.setFixedSize(800, 600)
-        rank_table = QTableWidget()
-        print('准备连接')
-        self.db = QSqlDatabase.addDatabase('QMYSQL')
-        self.db.setHostName('localhost')
-        self.db.setPort(3306)
-        self.db.setDatabaseName('mydb')
-        self.db.setUserName('Pram')
-        self.db.setPassword('123456')
-        print('连接开始')
-        if self.db.open():
-            print('成功连接')
-        else:
-            print('连接失败')
+        self.setFixedSize(600, 300)
+
+        for mode in ("Easy", "Medium", "Hard"):
+            rank_table = QTableWidget(5, 3)
+            rank_table.setHorizontalHeaderLabels(["名次", "用户名", "时间"])
+            rank_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            rank_table.verticalHeader().setVisible(False)
+            rank_table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            rank_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            if mode == "Easy":
+                title = "简单"
+            elif mode == "Medium":
+                title = "中等"
+            else:
+                title = "困难"
+            self.addTab(rank_table, title)
+
+            rank = sqlite3.connect('rank.db')
+            c = rank.cursor()
+
+            j = 0
+            for row in c.execute("SELECT * FROM {} ORDER BY id;".format(mode)):
+                for item in row:
+                    if isinstance(item, int):
+                        item = str(item)
+                    elif isinstance(item, float):
+                        item = "{:.2f}s".format(item)
+                    elif item is None:
+                        item = '_'
+                    rank_table.setItem(0, j, QTableWidgetItem(item))
+                    j += 1
+
+        # print('准备连接')
+        # self.db = QSqlDatabase.addDatabase('QMYSQL')
+        # self.db.setHostName('localhost')
+        # self.db.setPort(3306)
+        # self.db.setDatabaseName('mydb')
+        # self.db.setUserName('Pram')
+        # self.db.setPassword('123456')
+        # print('连接开始')
+        # if self.db.open():
+        #     print('成功连接')
+        # else:
+        #     print('连接失败')
+
+        rank.commit()
+        rank.close()
 
 
 # noinspection PyAttributeOutsideInit
@@ -189,6 +226,8 @@ class MineSweeperWindow(QMainWindow):
         self.btn.setStyleSheet('QPushButton{border:None}')
         self.btn.clicked.connect(self.restart)
         self.over_signal = 0
+        self.rank = sqlite3.connect('rank.db')
+        self.c = self.rank.cursor()
 
     def set_menu(self):
         bar = self.menuBar()
@@ -289,12 +328,13 @@ class MineSweeperWindow(QMainWindow):
         """根据鼠标的动作，确定落子位置"""
         if self.over_signal == 1:
             return
-        if self.ms.step == 0:
-            self.timer.start(1000, self)
         if e.button() in (Qt.LeftButton, Qt.RightButton):
             mouse_x = e.windowPos().x()
             mouse_y = e.windowPos().y()
             if 50 <= mouse_x <= 50 * self.ms.length + 50 and 130 <= mouse_y <= 50 * self.ms.width + 130:
+                if self.ms.step == 0:
+                    self.timer.start(1000, self)
+                    self.tic = time_ns()
                 game_x = int(mouse_x // 50) - 1
                 game_y = int((mouse_y - 80) // 50) - 1
             else:
@@ -306,12 +346,20 @@ class MineSweeperWindow(QMainWindow):
             else:
                 self.ms.mark_mine(game_x, game_y)
         if self.ms.boom:
+            self.timer.stop()
+            self.btn.setIcon(QIcon(':/哭脸.png'))
+            self.btn.setIconSize(QSize(45, 45))
             self.repaint(0, 0, 50 * self.ms.length + 100, 50 * self.ms.width + 180)
-            self.game_result()
+            self.over_signal = 1
             return
         elif self.ms.game_judge():
+            self.timer.stop()
+            self.toc = time_ns()
+            self.btn.setIconSize(QSize(45, 45))
+            self.btn.setIcon(QIcon(':/笑脸.png'))
             self.repaint(0, 0, 50 * self.ms.length + 100, 50 * self.ms.width + 180)
-            self.game_result()
+            self.check_rank()
+            self.over_signal = 1
             return
         self.repaint(0, 0, 50 * self.ms.length + 100, 50 * self.ms.width + 180)
         self.remain_boom.display('{:>02d}'.format(self.ms.b_num if self.ms.b_num >= 0 else 0))
@@ -319,16 +367,6 @@ class MineSweeperWindow(QMainWindow):
     def timerEvent(self, e) -> None:
         self.second += 1
         self.time.display('{:>03d}'.format(self.second))
-
-    def game_result(self):
-        self.timer.stop()
-        if self.ms.boom:
-            self.btn.setIcon(QIcon(':/哭脸.png'))
-            self.btn.setIconSize(QSize(45, 45))
-        elif self.ms.game_judge():
-            self.btn.setIcon(QIcon(':/笑脸.png'))
-            self.btn.setIconSize(QSize(45, 45))
-        self.over_signal = 1
 
     def set_mode(self, action: QAction):
         if action == self.easy:
@@ -362,3 +400,49 @@ class MineSweeperWindow(QMainWindow):
         self.timer.stop()
         self.time.display('{:>03d}'.format(self.second))
         self.over_signal = 0
+
+    def check_rank(self):
+        a_num = (self.toc - self.tic) / 10 ** 9
+        out = subprocess.check_output("whoami").decode("gbk")
+        name = re.search(r"\\(.+)\r\n", out)
+        a_user = name.group(1)
+        for i in range(5, 0, -1):
+            if isinstance(self.ms, EasyMode):
+                mode = "Easy"
+            elif isinstance(self.ms, MediumMode):
+                mode = "Medium"
+            elif isinstance(self.ms, HardMode):
+                mode = "Hard"
+            else:
+                return
+            self.c.execute("SELECT * FROM {} WHERE id=?;".format(mode), (i,))
+            feedback = self.c.fetchone()
+            if i == 5:
+                if (not feedback[2]) or (feedback[2] > a_num):
+                    a_user, _ = QInputDialog.getText(self, "用户名", "请输入用户名：", QLineEdit.Normal, text=a_user)
+                    self.c.execute("UPDATE {} SET user=?, time=? WHERE id=?;".format(mode),
+                                   (a_user, a_num, i))
+                    self.rank.commit()
+                    continue
+                else:
+                    return
+            else:
+                if (not feedback[2]) or (feedback[2] > a_num):
+                    self.c.execute(
+                        "UPDATE {0} "
+                        "SET user = (SELECT user FROM {0} WHERE id=?), "
+                        "time = (SELECT time FROM {0} WHERE id=?)"
+                        "WHERE id=? ;".format(mode),
+                        (i, i, i + 1)
+                    )
+                    self.c.execute(
+                        "UPDATE {} SET user=?, time=? WHERE id=? ;".format(mode),
+                        (a_user, a_num, i)
+                    )
+                    self.rank.commit()
+                else:
+                    return
+
+    def closeEvent(self, e):
+        self.rank.commit()
+        self.rank.close()
